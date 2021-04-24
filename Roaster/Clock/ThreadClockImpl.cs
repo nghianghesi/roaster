@@ -11,11 +11,11 @@ namespace Roaster
     {
         private List<Clock.IClockTickHandler> handlers = new List<Clock.IClockTickHandler>();
         private bool Shutdown = false;
-        private Task clockTask = null;
+        private Thread clockThread = null;
         public ThreadClockImpl(int msPerTick = 1000)
         {
             msPerTick = (msPerTick > 0) ? msPerTick : 1000;
-            this.clockTask = Task.Factory.StartNew(()=>
+            this.clockThread = new Thread(()=>
             {
                 int timeToWait = msPerTick;
                 while (!this.Shutdown)
@@ -42,6 +42,8 @@ namespace Roaster
                     timeToWait = msPerTick - (int)startTick;
                 }
             });
+
+            this.clockThread.Start();
         }
 
         public void AddHandler(Clock.IClockTickHandler h)
@@ -65,7 +67,7 @@ namespace Roaster
         public void Dispose()
         {
             this.Shutdown = true;
-            this.clockTask.Wait();
+            this.clockThread.Join();
         }
     }
 }

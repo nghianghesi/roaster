@@ -6,7 +6,7 @@ namespace Roaster.Test
     [TestClass]
     public class RoasterTest
     {
-        private const int MSPERTICK = 10;
+        private const int MSPERTICK = 100;
         private static ThreadClockImpl clock = new ThreadClockImpl(MSPERTICK);
 
         [ClassInitialize]
@@ -30,15 +30,13 @@ namespace Roaster.Test
             Assert.IsTrue(roaster.Receive(new Bread(), 0, 1));
             roaster.Settimer(0, 5);
             roaster.CloseLever(0);
-            using (new ThreadClockSleep(11))
-            {
-                // simulate timeout --> lever auto open
-                ItemAbstract item = roaster.Release(0, 0);
-                Assert.AreEqual(CookingStatus.Cooked, item.CookingStatus);
+            System.Threading.Thread.Sleep(MSPERTICK * 11);
+            // simulate timeout --> lever auto open
+            ItemAbstract item = roaster.Release(0, 0);
+            Assert.AreEqual(CookingStatus.Cooked, item.CookingStatus);
 
-                item = roaster.Release(0, 1);
-                Assert.AreEqual(CookingStatus.Cooked, item.CookingStatus);
-            }
+            item = roaster.Release(0, 1);
+            Assert.AreEqual(CookingStatus.Cooked, item.CookingStatus);
         }
 
         [TestMethod]
@@ -49,15 +47,15 @@ namespace Roaster.Test
             Assert.IsTrue(roaster.Receive(new Bagel(), 1, 1));
             roaster.Settimer(1, 10); // 10 ticks
             roaster.CloseLever(1);
-            using (new ThreadClockSleep(7)) {
-                roaster.OpenLever(1); // simulate force close
 
-                ItemAbstract item = roaster.Release(1, 0);
-                Assert.AreEqual(CookingStatus.Over, item.CookingStatus);
+            System.Threading.Thread.Sleep(MSPERTICK * 8);
+            roaster.OpenLever(1); // simulate force close
 
-                item = roaster.Release(1, 1);
-                Assert.AreEqual(CookingStatus.Under, item.CookingStatus);
-            }
+            ItemAbstract item = roaster.Release(1, 0);
+            Assert.AreEqual(CookingStatus.Over, item.CookingStatus);
+
+            item = roaster.Release(1, 1);
+            Assert.AreEqual(CookingStatus.Under, item.CookingStatus);
         }
 
         [TestMethod]
@@ -70,16 +68,14 @@ namespace Roaster.Test
             roaster.CloseLever(1);
             System.Threading.Thread.Sleep(MSPERTICK * 3);
             roaster.ToggleStatus();
-            using (new ThreadClockSleep(7))
-            {
-                roaster.OpenLever(1); // simulate force close
+            System.Threading.Thread.Sleep(MSPERTICK * 7);
+            roaster.OpenLever(1); // simulate force close
 
-                ItemAbstract item = roaster.Release(1, 0);
-                Assert.AreEqual(CookingStatus.Under, item.CookingStatus);
+            ItemAbstract item = roaster.Release(1, 0);
+            Assert.AreEqual(CookingStatus.Under, item.CookingStatus);
 
-                item = roaster.Release(1, 1);
-                Assert.AreEqual(CookingStatus.Under, item.CookingStatus);
-            }
+            item = roaster.Release(1, 1);
+            Assert.AreEqual(CookingStatus.Under, item.CookingStatus);
         }
 
         [TestMethod]
@@ -93,39 +89,15 @@ namespace Roaster.Test
             roaster.CloseLever(1);
             System.Threading.Thread.Sleep(MSPERTICK * 10);
             roaster.ToggleStatus();
-            using (new ThreadClockSleep(7))
-            {
-                roaster.OpenLever(1); // simulate force close
 
-                ItemAbstract item = roaster.Release(1, 0);
-                Assert.AreEqual(CookingStatus.Over, item.CookingStatus);
+            System.Threading.Thread.Sleep(MSPERTICK * 8);
+            roaster.OpenLever(1); // simulate force close
 
-                item = roaster.Release(1, 1);
-                Assert.AreEqual(CookingStatus.Under, item.CookingStatus);
-            }
-        }
+            ItemAbstract item = roaster.Release(1, 0);
+            Assert.AreEqual(CookingStatus.Over, item.CookingStatus);
 
-        private class ThreadClockSleep : Clock.IClockTickHandler, System.IDisposable
-        {
-            private int waitCount = 0;
-            public ThreadClockSleep(int tickToWait)
-            {
-                DI.Resolver.Resolve<Clock.IClock>().AddHandler(this);
-                while(waitCount < tickToWait)
-                {
-                    System.Threading.Thread.Sleep(MSPERTICK);
-                }
-            }
-            
-            public void OnClockTick()
-            {
-                waitCount += 1;
-            }
-
-            public void Dispose()
-            {
-                DI.Resolver.Resolve<Clock.IClock>().RemoveHandler(this);
-            }
+            item = roaster.Release(1, 1);
+            Assert.AreEqual(CookingStatus.Under, item.CookingStatus);
         }
     }
 }
