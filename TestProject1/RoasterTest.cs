@@ -6,7 +6,7 @@ namespace Roaster.Test
     [TestClass]
     public class RoasterTest
     {
-        private const int MSPERTICK = 100;
+        private const int MSPERTICK = 50;
         private static ThreadClockImpl clock = new ThreadClockImpl(MSPERTICK);
 
         [ClassInitialize]
