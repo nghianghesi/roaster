@@ -6,7 +6,8 @@ namespace Roaster.Test
     [TestClass]
     public class RoasterTest
     {
-        private static ThreadClockImpl clock = new ThreadClockImpl(10);
+        private const int MSPERTICK = 10;
+        private static ThreadClockImpl clock = new ThreadClockImpl(MSPERTICK);
 
         [ClassInitialize]
         public static void Setup(TestContext context)
@@ -29,14 +30,15 @@ namespace Roaster.Test
             Assert.IsTrue(roaster.Receive(new Bread(), 0, 1));
             roaster.Settimer(0, 5);
             roaster.CloseLever(0);
-            System.Threading.Thread.Sleep(100);
-            // simulate timeout --> lever auto open
+            using (new ThreadClockSleep(11))
+            {
+                // simulate timeout --> lever auto open
+                ItemAbstract item = roaster.Release(0, 0);
+                Assert.AreEqual(CookingStatus.Cooked, item.CookingStatus);
 
-            ItemAbstract item = roaster.Release(0, 0);
-            Assert.AreEqual(CookingStatus.Cooked, item.CookingStatus);
-
-            item = roaster.Release(0, 1);
-            Assert.AreEqual(CookingStatus.Cooked, item.CookingStatus);
+                item = roaster.Release(0, 1);
+                Assert.AreEqual(CookingStatus.Cooked, item.CookingStatus);
+            }
         }
 
         [TestMethod]
@@ -47,14 +49,15 @@ namespace Roaster.Test
             Assert.IsTrue(roaster.Receive(new Bagel(), 1, 1));
             roaster.Settimer(1, 10); // 10 ticks
             roaster.CloseLever(1);
-            System.Threading.Thread.Sleep(95);
-            roaster.OpenLever(1); // simulate force close
+            using (new ThreadClockSleep(7)) {
+                roaster.OpenLever(1); // simulate force close
 
-            ItemAbstract item = roaster.Release(1, 0);
-            Assert.AreEqual(CookingStatus.Over, item.CookingStatus);
+                ItemAbstract item = roaster.Release(1, 0);
+                Assert.AreEqual(CookingStatus.Over, item.CookingStatus);
 
-            item = roaster.Release(1, 1);
-            Assert.AreEqual(CookingStatus.Under, item.CookingStatus);
+                item = roaster.Release(1, 1);
+                Assert.AreEqual(CookingStatus.Under, item.CookingStatus);
+            }
         }
 
         [TestMethod]
@@ -65,16 +68,18 @@ namespace Roaster.Test
             Assert.IsTrue(roaster.Receive(new Bagel(), 1, 1));
             roaster.Settimer(1, 10);
             roaster.CloseLever(1);
-            System.Threading.Thread.Sleep(30);
+            System.Threading.Thread.Sleep(MSPERTICK * 3);
             roaster.ToggleStatus();
-            System.Threading.Thread.Sleep(100);
-            roaster.OpenLever(1); // simulate force close
+            using (new ThreadClockSleep(7))
+            {
+                roaster.OpenLever(1); // simulate force close
 
-            ItemAbstract item = roaster.Release(1, 0);
-            Assert.AreEqual(CookingStatus.Under, item.CookingStatus);
+                ItemAbstract item = roaster.Release(1, 0);
+                Assert.AreEqual(CookingStatus.Under, item.CookingStatus);
 
-            item = roaster.Release(1, 1);
-            Assert.AreEqual(CookingStatus.Under, item.CookingStatus);
+                item = roaster.Release(1, 1);
+                Assert.AreEqual(CookingStatus.Under, item.CookingStatus);
+            }
         }
 
         [TestMethod]
@@ -86,16 +91,41 @@ namespace Roaster.Test
             Assert.IsTrue(roaster.Receive(new Bagel(), 1, 1));
             roaster.Settimer(1, 10);
             roaster.CloseLever(1);
-            System.Threading.Thread.Sleep(100);
+            System.Threading.Thread.Sleep(MSPERTICK * 10);
             roaster.ToggleStatus();
-            System.Threading.Thread.Sleep(80);
-            roaster.OpenLever(1); // simulate force close
+            using (new ThreadClockSleep(7))
+            {
+                roaster.OpenLever(1); // simulate force close
 
-            ItemAbstract item = roaster.Release(1, 0);
-            Assert.AreEqual(CookingStatus.Over, item.CookingStatus);
+                ItemAbstract item = roaster.Release(1, 0);
+                Assert.AreEqual(CookingStatus.Over, item.CookingStatus);
 
-            item = roaster.Release(1, 1);
-            Assert.AreEqual(CookingStatus.Under, item.CookingStatus);
+                item = roaster.Release(1, 1);
+                Assert.AreEqual(CookingStatus.Under, item.CookingStatus);
+            }
+        }
+
+        private class ThreadClockSleep : Clock.IClockTickHandler, System.IDisposable
+        {
+            private int waitCount = 0;
+            public ThreadClockSleep(int tickToWait)
+            {
+                DI.Resolver.Resolve<Clock.IClock>().AddHandler(this);
+                while(waitCount < tickToWait)
+                {
+                    System.Threading.Thread.Sleep(MSPERTICK);
+                }
+            }
+            
+            public void OnClockTick()
+            {
+                waitCount += 1;
+            }
+
+            public void Dispose()
+            {
+                DI.Resolver.Resolve<Clock.IClock>().RemoveHandler(this);
+            }
         }
     }
 }

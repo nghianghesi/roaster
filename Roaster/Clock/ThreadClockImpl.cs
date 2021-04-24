@@ -12,14 +12,19 @@ namespace Roaster
         private List<Clock.IClockTickHandler> handlers = new List<Clock.IClockTickHandler>();
         private bool Shutdown = false;
         private Task clockTask = null;
-        public ThreadClockImpl(int sleepTime = 1000)
+        public ThreadClockImpl(int msPerTick = 1000)
         {
-            sleepTime = (sleepTime > 0) ? sleepTime : 1000;
+            msPerTick = (msPerTick > 0) ? msPerTick : 1000;
             this.clockTask = Task.Factory.StartNew(()=>
             {
+                int timeToWait = msPerTick;
                 while (!this.Shutdown)
                 {
-                    System.Threading.Thread.Sleep(sleepTime);
+                    if (timeToWait > 0)
+                    {
+                        System.Threading.Thread.Sleep(timeToWait);
+                    }
+                    long startTick = System.DateTime.Now.Ticks;
 
                     List<Clock.IClockTickHandler> cloneHandlers;
 
@@ -32,6 +37,9 @@ namespace Roaster
                     {
                         h.OnClockTick();
                     }
+
+                    startTick = (System.DateTime.Now.Ticks - startTick) / 10000;
+                    timeToWait = msPerTick - (int)startTick;
                 }
             });
         }

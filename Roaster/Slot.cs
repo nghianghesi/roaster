@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Roaster
 {
-    public class Slot : ITimmeoutHandler, ILeverStatusChangedHandler
+    public class Slot : ITimerEventHandler, ILeverStatusChangedHandler
     {
         private ItemAbstract item;
         private int CookingTime = 0;
@@ -46,7 +46,7 @@ namespace Roaster
             return outItem;
         }
 
-        public void OnTimerTick()
+        public void OnTick()
         {
             if (this.lever?.LeverStatus == LeverStatus.Closed && this.roaster?.RoasterStatus == RoasterStatus.On)
             {

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Roaster
 {
-    public class Lever : ITimmeoutHandler
+    public class Lever : ITimerEventHandler
     {
         public LeverStatus LeverStatus { get; private set; }
         internal readonly List<ILeverStatusChangedHandler> LeverStatusChangedHandlers = new List<ILeverStatusChangedHandler>();
@@ -35,7 +35,7 @@ namespace Roaster
             }
         }
 
-        public void OnTimerTick()
+        public void OnTick()
         {
             // do nothing
         }

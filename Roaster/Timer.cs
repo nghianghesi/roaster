@@ -8,7 +8,7 @@ namespace Roaster
 {
     public class Timer : Clock.IClockTickHandler, ILeverStatusChangedHandler
     {
-        internal readonly List<ITimmeoutHandler> TimeoutHandlers = new List<ITimmeoutHandler>();
+        internal readonly List<ITimerEventHandler> TimeoutHandlers = new List<ITimerEventHandler>();
 
         public int Timeout
         {
@@ -30,7 +30,7 @@ namespace Roaster
         {
             foreach (var h in this.TimeoutHandlers)
             {
-                h.OnTimerTick();
+                h.OnTick();
             }
 
             if (this.Roaster?.RoasterStatus == RoasterStatus.On)
@@ -61,9 +61,9 @@ namespace Roaster
         }
     }
 
-    public interface ITimmeoutHandler
+    public interface ITimerEventHandler
     {
-        public void OnTimerTick();
+        public void OnTick();
         public void OnTimeout();
     }
 }
