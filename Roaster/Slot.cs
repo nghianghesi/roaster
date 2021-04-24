@@ -6,35 +6,38 @@ using System.Threading.Tasks;
 
 namespace Roaster
 {
-    public enum SlotStatus
-    {
-        Open, Cooking, Pending
-    }
-
-    public class Slot : IRoasterStatusChangedHandler
+    public class Slot : ITimmeoutHandler, ILeverStatusChangedHandler
     {
         private ItemAbstract item;
         private int CookingTime = 0;
 
-        public SlotStatus SlotStatus
+        private Roaster roaster;
+
+        private Lever lever;
+
+        public Slot(Roaster roaster, Timer timer, Lever lever)
         {
-            get; private set;
+            this.roaster = roaster;
+            this.lever = lever;
+            timer?.TimeoutHandlers.Add(this);
+            lever?.LeverStatusChangedHandlers.Add(this);
         }
 
         internal bool Receive(ItemAbstract item)
         {
-            if(this.item == null && SlotStatus == SlotStatus.Open)
+            if(this.item == null && this.lever?.LeverStatus == LeverStatus.Open)
             {
                 this.item = item;
                 return true;
             }
+
             return false;
         }
 
         internal ItemAbstract Release()
         {
             ItemAbstract outItem = null;
-            if (this.item != null && SlotStatus == SlotStatus.Open)
+            if (this.item != null && this.lever?.LeverStatus == LeverStatus.Open)
             {
                 outItem = this.item;
                 this.item = null;
@@ -43,66 +46,27 @@ namespace Roaster
             return outItem;
         }
 
-        public void StartCooking(RoasterStatus roasterStatus)
+        public void OnTimerTick()
         {
-            lock (this)
+            if (this.lever?.LeverStatus == LeverStatus.Closed && this.roaster?.RoasterStatus == RoasterStatus.On)
             {
-                if (roasterStatus == RoasterStatus.On)
-                {
-                    this.SlotStatus = SlotStatus.Cooking;
-                }
-                else
-                {
-                    this.SlotStatus = SlotStatus.Pending;
-                }
+                this.CookingTime += 1;
             }
+        }
+
+        public void OnTimeout()
+        {
+            // do nothing
+        }
+
+        public void OnLeverClosed()
+        {            
             this.CookingTime = 0;
         }
 
-        internal void EndCooking()
+        public void OnLeverOpened()
         {
-            if (this.item != null && this.SlotStatus != SlotStatus.Open)
-            {
-                this.item.Cooked(this.CookingTime);
-            }
-
-            lock (this)
-            {
-                this.SlotStatus = SlotStatus.Open;
-            }
-        }
-
-        public void OnTimerClick()
-        {
-            lock (this)
-            {
-                if (this.SlotStatus == SlotStatus.Cooking)
-                {
-                    this.CookingTime += 1;
-                }
-            }
-        }
-
-        public void OnRoasterOn()
-        {
-            lock (this)
-            {
-                if (this.SlotStatus == SlotStatus.Pending)
-                {
-                    this.SlotStatus = SlotStatus.Cooking;
-                }
-            }
-        }
-
-        public void OnRoasterOff()
-        {
-            lock (this)
-            {
-                if (this.SlotStatus == SlotStatus.Cooking)
-                {
-                    this.SlotStatus = SlotStatus.Pending;
-                }
-            }
+            this.item?.Cooked(this.CookingTime);
         }
     }
 }

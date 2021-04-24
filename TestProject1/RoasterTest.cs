@@ -24,7 +24,7 @@ namespace Roaster.Test
         [TestMethod]
         public void TestGoodCookingByTimer()
         {
-            Roaster roaster = this.CreateRoaster();
+            Roaster roaster = new Roaster(2, 2);
             Assert.IsTrue(roaster.Receive(new Bread(), 0, 0));
             Assert.IsTrue(roaster.Receive(new Bread(), 0, 1));
             roaster.Settimer(0, 5);
@@ -42,7 +42,7 @@ namespace Roaster.Test
         [TestMethod]
         public void TestUnderCookingByForceEnded()
         {
-            Roaster roaster = this.CreateRoaster();
+            Roaster roaster = new Roaster(2, 2);
             Assert.IsTrue(roaster.Receive(new Bread(), 1, 0));
             Assert.IsTrue(roaster.Receive(new Bagel(), 1, 1));
             roaster.Settimer(1, 10); // 10 ticks
@@ -60,7 +60,7 @@ namespace Roaster.Test
         [TestMethod]
         public void TestUnderCookingByOffRoaster()
         {
-            Roaster roaster = this.CreateRoaster();
+            Roaster roaster = new Roaster(2, 2);
             Assert.IsTrue(roaster.Receive(new Bread(), 1, 0));
             Assert.IsTrue(roaster.Receive(new Bagel(), 1, 1));
             roaster.Settimer(1, 10);
@@ -80,7 +80,7 @@ namespace Roaster.Test
         [TestMethod]
         public void TestCookingFromOffToOnRoaster()
         {
-            Roaster roaster = this.CreateRoaster();
+            Roaster roaster = new Roaster(2, 2);
             roaster.ToggleStatus();
             Assert.IsTrue(roaster.Receive(new Bread(), 1, 0));
             Assert.IsTrue(roaster.Receive(new Bagel(), 1, 1));
@@ -96,40 +96,6 @@ namespace Roaster.Test
 
             item = roaster.Release(1, 1);
             Assert.AreEqual(CookingStatus.Under, item.CookingStatus);
-        }
-
-        private Roaster CreateRoaster()
-        {
-            List<Lever> levers = new List<Lever>()
-            {
-                new Lever(),
-                new Lever(),
-            };
-
-            List<Timer> timers = new List<Timer>()
-            {
-                new Timer(),
-                new Timer(),
-            };
-
-            List<Slot> lots1 = new List<Slot>()
-            {
-                new Slot(),
-                new Slot(),
-            };
-            List<Slot> lots2 = new List<Slot>()
-            {
-                new Slot(),
-                new Slot(),
-            };
-
-            List<SlotGroup> groups = new List<SlotGroup>()
-            {
-                new SlotGroup(lots1),
-                new SlotGroup(lots2)
-            };
-
-            return new Roaster(groups, timers, levers);
         }
     }
 }

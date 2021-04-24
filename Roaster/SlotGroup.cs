@@ -7,13 +7,16 @@ using System.Threading.Tasks;
 namespace Roaster
 {
 
-    public class SlotGroup: IRoasterStatusChangedHandler
+    public class SlotGroup
     {
         private List<Slot> slots = new List<Slot>();
        
-        public SlotGroup(List<Slot> slots)
+        public SlotGroup(Roaster roaster, Timer timer, Lever lever, int numberOfSlotPerGroup)
         {
-            this.slots = slots;
+            for (int idx = 0; idx < numberOfSlotPerGroup; idx++)
+            {
+                this.slots.Add(new Slot(roaster, timer, lever));
+            }
         }
 
         public bool Receive(ItemAbstract item, int slotIdx)
@@ -34,46 +37,6 @@ namespace Roaster
             }
 
             return null;
-        }
-
-        internal void StartCook(RoasterStatus roasterStatus)
-        {
-            foreach(Slot slot in this.slots)
-            {
-                slot.StartCooking(roasterStatus);
-            }
-        }
-
-        internal void EndCook()
-        {
-            foreach (Slot slot in this.slots)
-            {
-                slot.EndCooking();
-            }
-        }
-
-        public void OnTimerClick()
-        {
-            foreach (Slot slot in this.slots)
-            {
-                slot.OnTimerClick();
-            }
-        }
-
-        public void OnRoasterOn()
-        {
-            foreach (Slot slot in this.slots)
-            {
-                slot.OnRoasterOn();
-            }
-        }
-
-        public void OnRoasterOff()
-        {
-            foreach (Slot slot in this.slots)
-            {
-                slot.OnRoasterOff();
-            }
         }
     }
 }

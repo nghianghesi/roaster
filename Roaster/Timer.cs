@@ -6,83 +6,64 @@ using System.Threading.Tasks;
 
 namespace Roaster
 {
-    public class Timer: IRoasterStatusChangedHandler, Clock.IClockTickHandler
+    public class Timer : Clock.IClockTickHandler, ILeverStatusChangedHandler
     {
-        private TimerStatus status;
-        internal Lever Lever
-        {
-            get; 
-            set;
-        }
-        internal SlotGroup SlotGroup
+        internal readonly List<ITimmeoutHandler> TimeoutHandlers = new List<ITimmeoutHandler>();
+
+        public int Timeout
         {
             get;
             set;
         }
 
-        public int Timeout
-        { 
-            get; 
-            set;
+        private Roaster Roaster
+        {
+            get;set;
         }
 
-        internal void ResetCountDown()
+        public Timer(Roaster roaster)
         {
-            if (this.status != TimerStatus.Initial)
-            {
-                this.Timeout = 0;
-                this.status = TimerStatus.Initial;
-                DI.Resolver.Resolve<Clock.IClock>()?.RemoveHandler(this);
-            }
-        }
-
-        internal void StartCountDown(RoasterStatus roasterStatus)
-        {
-            if (roasterStatus == RoasterStatus.On)
-            {
-                this.status = TimerStatus.CountingDown;
-            }
-            else
-            {
-                this.status = TimerStatus.Pended;
-            }
-
-            DI.Resolver.Resolve<Clock.IClock>()?.AddHandler(this);
-        }
-
-        public void OnRoasterOn()
-        {
-            if (this.status == TimerStatus.Pended)
-            {
-                this.status = TimerStatus.CountingDown;
-            }
-        }
-
-        public void OnRoasterOff()
-        {
-            if (this.status == TimerStatus.CountingDown)
-            {
-                this.status = TimerStatus.Pended;
-            }
+            this.Roaster = roaster;
         }
 
         public void OnClockTick()
         {
-            if (this.status == TimerStatus.CountingDown)
+            foreach (var h in this.TimeoutHandlers)
+            {
+                h.OnTimerTick();
+            }
+
+            if (this.Roaster?.RoasterStatus == RoasterStatus.On)
             {
                 this.Timeout -= 1;
-                this.SlotGroup.OnTimerClick();
                 if(this.Timeout<=0)
                 {
-                    this.ResetCountDown();
-                    this.Lever.Open();
+                    this.Timeout = 0;
+                    DI.Resolver.Resolve<Clock.IClock>()?.RemoveHandler(this);
+                    foreach(var h in this.TimeoutHandlers)
+                    {
+                        h.OnTimeout();
+                    }
                 }
             }
         }
+
+        public void OnLeverClosed()
+        {
+            // start countdown
+            DI.Resolver.Resolve<Clock.IClock>()?.AddHandler(this);
+        }
+
+        public void OnLeverOpened()
+        {
+            // stop countdown
+            DI.Resolver.Resolve<Clock.IClock>()?.RemoveHandler(this);
+        }
     }
 
-    public enum TimerStatus
+    public interface ITimmeoutHandler
     {
-        Initial, CountingDown, Pended
+        public void OnTimerTick();
+        public void OnTimeout();
     }
 }

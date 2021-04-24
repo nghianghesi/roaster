@@ -6,30 +6,20 @@ using System.Threading.Tasks;
 
 namespace Roaster
 {
-    enum LeverStatus
+    public class Lever : ITimmeoutHandler
     {
-        Open, Closed
-    }
-    public class Lever
-    {
-        private LeverStatus LeverStatus { get; set; }
+        public LeverStatus LeverStatus { get; private set; }
+        internal readonly List<ILeverStatusChangedHandler> LeverStatusChangedHandlers = new List<ILeverStatusChangedHandler>();
 
-        internal Timer Timer
-        { get; set; }
-
-
-        internal SlotGroup SlotGroup
-        {
-            get; set;
-        }
-
-        public void Close(RoasterStatus roasterStatus)
+        public void Close()
         {
             if (LeverStatus != LeverStatus.Closed)
             {
                 this.LeverStatus = LeverStatus.Closed;
-                this.SlotGroup.StartCook(roasterStatus);
-                this.Timer.StartCountDown(roasterStatus);
+                foreach(var l in LeverStatusChangedHandlers)
+                {
+                    l.OnLeverClosed();
+                }
             }
         }
 
@@ -38,8 +28,32 @@ namespace Roaster
             if (LeverStatus != LeverStatus.Open)
             {
                 this.LeverStatus = LeverStatus.Open;
-                this.SlotGroup.EndCook();
+                foreach (var l in LeverStatusChangedHandlers)
+                {
+                    l.OnLeverOpened();
+                }
             }
         }
+
+        public void OnTimerTick()
+        {
+            // do nothing
+        }
+
+        public void OnTimeout()
+        {
+            this.Open();
+        }
+    }
+
+    public enum LeverStatus
+    {
+        Open, Closed
+    }
+
+    public interface ILeverStatusChangedHandler
+    {
+        public void OnLeverClosed();
+        public void OnLeverOpened();
     }
 }

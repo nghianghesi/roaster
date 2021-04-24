@@ -11,29 +11,27 @@ namespace Roaster
         private List<SlotGroup> groups = new List<SlotGroup>();
         private List<Lever> levers = new List<Lever>();
         private List<Timer> timers = new List<Timer>();
-        private List<IRoasterStatusChangedHandler> roasterStatusChangedHandlers = new List<IRoasterStatusChangedHandler>();
 
         public RoasterStatus RoasterStatus {
             get;
             private set;
         }
 
-        public Roaster(List<SlotGroup> groups, List<Timer> timers, List<Lever> levers)
+        public Roaster(int numberGroups, int numberOfSlotPerGroup)
         {
             // verify input & count match
-            this.groups = groups;
-            this.timers = timers;
-            this.levers = levers;
-            for(int idx = 0; idx<this.levers.Count; idx++)
+            for(int idx = 0; idx < numberGroups; idx++)
             {
-                this.levers[idx].SlotGroup = groups[idx];                
-                this.levers[idx].Timer = this.timers[idx];
-                this.timers[idx].Lever = this.levers[idx];
-                this.timers[idx].SlotGroup = this.groups[idx];
-            }
+                Lever lever = new Lever();
+                Timer timer = new Timer(this);
+                timer.TimeoutHandlers.Add(lever);
+                lever.LeverStatusChangedHandlers.Add(timer);
 
-            roasterStatusChangedHandlers.AddRange(this.timers);
-            roasterStatusChangedHandlers.AddRange(this.groups);
+                SlotGroup group = new SlotGroup(this, timer, lever, numberOfSlotPerGroup);
+                this.groups.Add(group);
+                this.levers.Add(lever);
+                this.timers.Add(timer);
+            }
         }
 
         public void ToggleStatus()
@@ -41,18 +39,10 @@ namespace Roaster
             if (this.RoasterStatus == RoasterStatus.Off)
             {
                 this.RoasterStatus = RoasterStatus.On;
-                foreach(IRoasterStatusChangedHandler handler in this.roasterStatusChangedHandlers)
-                {
-                    handler.OnRoasterOn();
-                }
             }
             else
             {
                 this.RoasterStatus = RoasterStatus.Off;
-                foreach (IRoasterStatusChangedHandler handler in this.roasterStatusChangedHandlers)
-                {
-                    handler.OnRoasterOff();
-                }
             }
         }
 
@@ -87,7 +77,7 @@ namespace Roaster
         {
             if (leverIdx < this.levers.Count)
             {
-                this.levers[leverIdx].Close(this.RoasterStatus);
+                this.levers[leverIdx].Close();
             }
         }
 
@@ -103,11 +93,5 @@ namespace Roaster
     public enum RoasterStatus
     {
         On, Off
-    }
-
-    public interface IRoasterStatusChangedHandler
-    {
-        public void OnRoasterOn();
-        public void OnRoasterOff();
     }
 }
